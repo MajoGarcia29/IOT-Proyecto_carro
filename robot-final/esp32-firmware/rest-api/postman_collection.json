@@ -1,1 +1,69 @@
+{
+  "info": {
+    "name": "Robot Final API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Healthcheck",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/v1/healthcheck",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api","v1","healthcheck"]
+        }
+      }
+    },
+    {
+      "name": "Publish move",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"action\": \"forward\",\n  \"speed\": 150,\n  \"duration_ms\": 500\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/v1/move",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api","v1","move"]
+        }
+      }
+    },
+    {
+      "name": "Get last move",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/v1/move",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api","v1","move"]
+        }
+      }
+    },
+    {
+      "name": "Get proximity latest",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/v1/sensors/proximity",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api","v1","sensors","proximity"]
+        }
+      }
+    }
+  ]
+}
 
