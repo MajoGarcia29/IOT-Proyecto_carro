@@ -42,9 +42,13 @@ Publica en el tópico MQTT: carro/comandos (Valores válidos: "forward", "left",
 
 Publica en: carro/velocidad (Valor numérico en el rango 0–255)7. Tópicos MQTT usadosAcciónTópicoPayloadMovimientocarro/comandos"forward", "left", "right", "backward", "stop"Velocidadcarro/velocidadvalor numérico (0–255)8.  Código para ESP32La ESP32 debe:Conectarse al WiFiConectarse al broker MQTT (usando la IP del computador, no localhost)Suscribirse a carro/comandos y carro/velocidadControlar motores según los mensajes recibidosNota: Para compilar el código en Arduino IDE, necesitarás instalar la librería PubSubClient. El código de ejemplo se encuentra en el archivo esp32_mqtt_client.ino.
 
-## 9.  Pruebas sin ESP32Se puede validar la funcionalidad de la mensajería MQTT con las herramientas de Mosquitto.Publicar mensaje:mosquitto_pub -t carro/comandos -m "forward"
+## 9.  Pruebas sin ESP32
+Se puede validar la funcionalidad de la mensajería MQTT con las herramientas de Mosquitto.Publicar mensaje:mosquitto_pub -t carro/comandos -m "forward"
 Escuchar mensajes:mosquitto_sub -t carro/comandos
 
-## 10.  Notas importantesLa ESP32 no debe usar "localhost"; necesita la IP del PC en la misma red.Para obtener la IP (Host):Sistema OperativoComandoCampo a buscarWindowsipconfig"IPv4 Address"Linux/macOSip a (o ifconfig)"inet"Si el frontend funciona y la API recibe las peticiones, pero no aparece nada en la ESP32, significa que la ESP32 aún no se ha conectado al broker (revisar configuración de IP y credenciales WiFi).
+## 10.  Notas importantes
+La ESP32 no debe usar "localhost"; necesita la IP del PC en la misma red.Para obtener la IP (Host):Sistema OperativoComandoCampo a buscarWindowsipconfig"IPv4 Address"Linux/macOSip a (o ifconfig)"inet"Si el frontend funciona y la API recibe las peticiones, pero no aparece nada en la ESP32, significa que la ESP32 aún no se ha conectado al broker (revisar configuración de IP y credenciales WiFi).
 
-## 11. Pasos que debe seguir cualquier colaboradorInstalar Node.js y MosquittoClonar el repositorioEjecutar npm installEjecutar node index.jsAbrir public/index.htmlConectar la ESP32 con el código MQTT y la IP correcta.
+## 11. Pasos que debe seguir cualquier colaborador
+* Instalar Node.js y MosquittoClonar el repositorioEjecutar npm installEjecutar node index.js
+* Abrir public/index.htmlConectar la ESP32 con el código MQTT y la IP correcta.
