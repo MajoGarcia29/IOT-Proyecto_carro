@@ -16,11 +16,12 @@ Software necesarioNode.js (v16 o superior) https://nodejs.orgMosquitto MQTT Brok
 
 └── README.md
 
-## 3.  Instalación3.1 Clonar el repositoriogit clone <URL-del-repositorio>
-### 3.1 cd api-mqtt
+## 3.  Instalación
+### 3.1 Clonar el repositoriogit clone <URL-del-repositorio> cd api-mqtt
 ### 3.2 Instalar dependenciasnpm install
 
-## 4.  Ejecutar el servidor4.1 Verificar que Mosquitto esté ejecutándoseWindows:net start mosquitto
+## 4.  Ejecutar el servidor
+### 4.1 Verificar que Mosquitto esté ejecutándoseWindows:net start mosquitto
 Linux/macOS:mosquitto -v
 Si está funcionando debería mostrar algo como:Opening ipv4 listen socket on port 1883
 ### 4.2 Iniciar la APInode index.js
