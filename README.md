@@ -1,55 +1,296 @@
 # Proyecto API + MQTT para Control de Carro con ESP32
- 
-Este proyecto permite controlar un carro robótico usando una API en Node.js que envía comandos por MQTT hacia una ESP32 conectada a un broker Mosquitto.Incluye:API en Node.js usando ExpressCliente MQTTFrontend simple en HTML/JSInstrucciones completas para instalación, ejecución y pruebas
 
-## 1. Requisitos: 
-Software necesarioNode.js (v16 o superior) https://nodejs.orgMosquitto MQTT Broker https://mosquitto.org/downloadNavegador web (Chrome recomendado)ESP32 (solo para pruebas reales)Arduino IDE o PlatformIO
+Este proyecto permite controlar un carro robótico usando una API en Node.js que envía comandos por MQTT hacia una ESP32 conectada a un broker Mosquitto.
 
-## 2. Estructura del proyectoapi-mqtt/
+## Características
 
-│── index.js           // Lógica de la API (Express) y cliente MQTT
+- API en Node.js usando Express
+- Cliente MQTT
+- Frontend simple en HTML/JS
+- Control de motores
+- **Sensor giroscópico** para estabilización y orientación
+- **Sensor de proximidad** para detección de obstáculos
+- Instrucciones completas para instalación, ejecución y pruebas
 
-│── package.json       // Dependencias de Node.js
+---
 
-│── public/
-│     └── index.html   // Interfaz de control (HTML/JS)
+## 1. Requisitos
 
+### Software necesario
+
+- **Node.js** (v16 o superior) - [https://nodejs.org](https://nodejs.org)
+- **Mosquitto MQTT Broker** - [https://mosquitto.org/download](https://mosquitto.org/download)
+- Navegador web (Chrome recomendado)
+- **ESP32** (para pruebas reales)
+- Arduino IDE o PlatformIO
+
+---
+
+## 2. Estructura del proyecto
+```
+api-mqtt/
+│
+├── index.js           # Lógica de la API (Express) y cliente MQTT
+├── package.json       # Dependencias de Node.js
+├── public/
+│   └── index.html     # Interfaz de control (HTML/JS)
+├── esp32_mqtt_client.ino  # Código para ESP32
 └── README.md
+```
 
-## 3.  Instalación
-### 3.1 Clonar el repositoriogit clone <URL-del-repositorio> cd api-mqtt
-### 3.2 Instalar dependenciasnpm install
+---
 
-## 4.  Ejecutar el servidor
-### 4.1 Verificar que Mosquitto esté ejecutándoseWindows:net start mosquitto
-Linux/macOS:mosquitto -v
-Si está funcionando debería mostrar algo como:Opening ipv4 listen socket on port 1883
-### 4.2 Iniciar la APInode index.js
-Salida esperada:Conectado al broker MQTT
+## 3. Instalación
+
+### 3.1 Clonar el repositorio
+```bash
+git clone <URL-del-repositorio>
+cd api-mqtt
+```
+
+### 3.2 Instalar dependencias
+```bash
+npm install
+```
+
+---
+
+## 4. Ejecutar el servidor
+
+### 4.1 Verificar que Mosquitto esté ejecutándose
+
+**Windows:**
+```bash
+net start mosquitto
+```
+
+**Linux/macOS:**
+```bash
+mosquitto -v
+```
+
+Si está funcionando debería mostrar algo como:
+```
+Opening ipv4 listen socket on port 1883
+```
+
+### 4.2 Iniciar la API
+```bash
+node index.js
+```
+
+**Salida esperada:**
+```
+Conectado al broker MQTT
 API corriendo en http://localhost:3000
+```
 
-## 5.  FrontendAbrir el archivo:public/index.html
-Se puede abrir con doble clic o desde un servidor local. El frontend usa JavaScript (Fetch API) para enviar peticiones POST a la API de Node.js.Los botones enviarán peticiones a la API.
+---
 
-## 6.  Endpoints disponibles (API)
-### 6.1 Mover el carroMétodo: 
+## 5. Frontend
 
-POSTURL: http://localhost:3000/moverBody (JSON):{
-  "cmd": "forward"
+Abrir el archivo:
+```
+public/index.html
+```
+
+Se puede abrir con doble clic o desde un servidor local. El frontend usa JavaScript (Fetch API) para enviar peticiones POST a la API de Node.js. Los botones enviarán peticiones a la API.
+
+---
+
+## 6. Endpoints disponibles (API)
+
+### 6.1 Mover el carro
+
+- **Método:** `POST`
+- **URL:** `http://localhost:3000/mover`
+- **Body (JSON):**
+```json
+  {
+    "cmd": "forward"
+  }
+```
+- **Publica en el tópico MQTT:** `carro/comandos`
+- **Valores válidos:** `"forward"`, `"left"`, `"right"`, `"backward"`, `"stop"`
+
+### 6.2 Cambiar velocidad
+
+- **Método:** `POST`
+- **URL:** `http://localhost:3000/velocidad`
+- **Body (JSON):**
+```json
+  {
+    "valor": 150
+  }
+```
+- **Publica en:** `carro/velocidad`
+- **Valor numérico en el rango:** `0–255`
+
+---
+
+## 7. Tópicos MQTT usados
+
+| Acción       | Tópico           | Payload                                          |
+|--------------|------------------|--------------------------------------------------|
+| Movimiento   | `carro/comandos` | `"forward"`, `"left"`, `"right"`, `"backward"`, `"stop"` |
+| Velocidad    | `carro/velocidad`| Valor numérico (0–255)                           |
+| Giroscopio   | `carro/gyro`     | Datos de orientación (JSON)                      |
+| Proximidad   | `carro/distancia`| Distancia en cm (numérico)                       |
+
+---
+
+## 8. Sensores implementados
+
+### 8.1 Sensor Giroscópico
+
+El sensor giroscópico (MPU6050 o similar) permite:
+- Detectar la orientación del carro
+- Estabilización durante el movimiento
+- Detección de inclinación
+
+**Tópico MQTT:** `carro/gyro`
+
+**Formato de datos:**
+```json
+{
+  "x": 0.5,
+  "y": -0.3,
+  "z": 9.8
 }
-Publica en el tópico MQTT: carro/comandos (Valores válidos: "forward", "left", "right", "backward", "stop")6.2 Cambiar velocidadMétodo: POSTURL: http://localhost:3000/velocidadBody (JSON):{
-  "valor": 150
+```
+
+### 8.2 Sensor de Proximidad
+
+El sensor de proximidad (HC-SR04 o similar) permite:
+- Detección de obstáculos
+- Medición de distancia
+- Frenado automático ante obstáculos
+
+**Tópico MQTT:** `carro/distancia`
+
+**Formato de datos:**
+```json
+{
+  "distancia": 25
 }
+```
 
-Publica en: carro/velocidad (Valor numérico en el rango 0–255)7. Tópicos MQTT usadosAcciónTópicoPayloadMovimientocarro/comandos"forward", "left", "right", "backward", "stop"Velocidadcarro/velocidadvalor numérico (0–255)8.  Código para ESP32La ESP32 debe:Conectarse al WiFiConectarse al broker MQTT (usando la IP del computador, no localhost)Suscribirse a carro/comandos y carro/velocidadControlar motores según los mensajes recibidosNota: Para compilar el código en Arduino IDE, necesitarás instalar la librería PubSubClient. El código de ejemplo se encuentra en el archivo esp32_mqtt_client.ino.
+---
 
-## 9.  Pruebas sin ESP32
-Se puede validar la funcionalidad de la mensajería MQTT con las herramientas de Mosquitto.Publicar mensaje:mosquitto_pub -t carro/comandos -m "forward"
-Escuchar mensajes:mosquitto_sub -t carro/comandos
+## 9. Código para ESP32
 
-## 10.  Notas importantes
-La ESP32 no debe usar "localhost"; necesita la IP del PC en la misma red.Para obtener la IP (Host):Sistema OperativoComandoCampo a buscarWindowsipconfig"IPv4 Address"Linux/macOSip a (o ifconfig)"inet"Si el frontend funciona y la API recibe las peticiones, pero no aparece nada en la ESP32, significa que la ESP32 aún no se ha conectado al broker (revisar configuración de IP y credenciales WiFi).
+La ESP32 debe:
+- Conectarse al WiFi
+- Conectarse al broker MQTT (usando la IP del computador, no `localhost`)
+- Suscribirse a `carro/comandos`, `carro/velocidad`
+- Publicar datos de sensores en `carro/gyro` y `carro/distancia`
+- Controlar motores según los mensajes recibidos
 
-## 11. Pasos que debe seguir cualquier colaborador
-* Instalar Node.js y MosquittoClonar el repositorioEjecutar npm installEjecutar node index.js
-* Abrir public/index.htmlConectar la ESP32 con el código MQTT y la IP correcta.
+**Nota:** Para compilar el código en Arduino IDE, necesitarás instalar las siguientes librerías:
+- `PubSubClient` (MQTT)
+- `MPU6050` o `Adafruit_MPU6050` (Giroscopio)
+- `NewPing` o librería nativa para HC-SR04 (Proximidad)
+
+El código de ejemplo se encuentra en el archivo `esp32_mqtt_client.ino`.
+
+---
+
+## 10. Pruebas sin ESP32
+
+Se puede validar la funcionalidad de la mensajería MQTT con las herramientas de Mosquitto.
+
+**Publicar mensaje:**
+```bash
+mosquitto_pub -t carro/comandos -m "forward"
+```
+
+**Escuchar mensajes:**
+```bash
+mosquitto_sub -t carro/comandos
+```
+
+**Simular datos de sensores:**
+```bash
+mosquitto_pub -t carro/distancia -m '{"distancia": 15}'
+mosquitto_pub -t carro/gyro -m '{"x": 0.1, "y": 0.2, "z": 9.8}'
+```
+
+---
+
+## 11. Notas importantes
+
+- La ESP32 **no debe usar** `"localhost"`; necesita la **IP del PC** en la misma red
+- Para obtener la IP (Host):
+
+| Sistema Operativo | Comando         | Campo a buscar  |
+|-------------------|-----------------|-----------------|
+| Windows           | `ipconfig`      | "IPv4 Address"  |
+| Linux/macOS       | `ip a` o `ifconfig` | "inet"      |
+
+- Si el frontend funciona y la API recibe las peticiones, pero no aparece nada en la ESP32, significa que la ESP32 aún no se ha conectado al broker (revisar configuración de IP y credenciales WiFi)
+- Los sensores deben ser inicializados correctamente en el código de la ESP32
+- Se recomienda calibrar el giroscopio al inicio
+
+---
+
+## 12. Pasos que debe seguir cualquier colaborador
+
+1. Instalar Node.js y Mosquitto
+2. Clonar el repositorio
+3. Ejecutar `npm install`
+4. Ejecutar `node index.js`
+5. Abrir `public/index.html`
+6. Conectar la ESP32 con el código MQTT y la IP correcta
+7. Conectar sensores giroscópico y de proximidad según el esquema de pines
+8. Verificar lecturas de sensores en los tópicos MQTT correspondientes
+
+---
+
+## 13. Esquema de conexión de sensores
+
+### Sensor Giroscópico (MPU6050)
+
+| Pin ESP32 | Pin MPU6050 |
+|-----------|-------------|
+| 3.3V      | VCC         |
+| GND       | GND         |
+| GPIO 21   | SDA         |
+| GPIO 22   | SCL         |
+
+### Sensor de Proximidad (HC-SR04)
+
+| Pin ESP32 | Pin HC-SR04 |
+|-----------|-------------|
+| 5V        | VCC         |
+| GND       | GND         |
+| GPIO 18   | TRIG        |
+| GPIO 19   | ECHO        |
+
+---
+
+## 14. Troubleshooting
+
+### Problema: ESP32 no se conecta al broker
+- Verificar que la IP del broker sea correcta
+- Comprobar que ambos dispositivos estén en la misma red
+- Revisar credenciales WiFi
+
+### Problema: Sensores no envían datos
+- Verificar conexiones físicas
+- Comprobar que las librerías estén instaladas
+- Revisar inicialización en el código
+
+### Problema: API no responde
+- Verificar que Node.js esté ejecutándose
+- Comprobar que el puerto 3000 no esté ocupado
+- Revisar logs del servidor
+
+---
+
+## Licencia
+
+Este proyecto está bajo licencia MIT.
+
+## Contribuciones
+
+Las contribuciones son bienvenidas. Por favor, abre un issue o pull request para sugerencias o mejoras.
