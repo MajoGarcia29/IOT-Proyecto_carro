@@ -165,7 +165,7 @@ Se puede abrir con doble clic o desde un servidor local. El frontend usa JavaScr
 
 ---
 
-## 5. Endpoints disponibles (API)
+## 5. Endpoints disponibles 
 
 ### 5.1 Mover el carro
 
