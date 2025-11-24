@@ -16,48 +16,114 @@ Este proyecto permite controlar un carro robótico usando una API en Node.js que
 
 ## 1. Requisitos
 
-### Software necesario
+### 1.1 Software necesario
 
 - **Node.js** (v16 o superior) - [https://nodejs.org](https://nodejs.org)
 - **Mosquitto MQTT Broker** - [https://mosquitto.org/download](https://mosquitto.org/download)
+- **OpenSSL** (para generar certificados TLS)
 - Navegador web (Chrome recomendado)
 - **ESP32** (para pruebas reales)
 - Arduino IDE o PlatformIO
 
----
+### 1.2 Crear carpeta de trabajo para certificados
 
-## 2. Estructura del proyecto
-```
-api-mqtt/
-│
-├── index.js           # Lógica de la API (Express) y cliente MQTT
-├── package.json       # Dependencias de Node.js
-├── public/
-│   └── index.html     # Interfaz de control (HTML/JS)
-├── esp32_mqtt_client.ino  # Código para ESP32
-└── README.md
+En tu PC crea una carpeta `robot-project/certs`:
+
+**Linux/macOS:**
+```bash
+mkdir -p ~/robot-project/certs
+cd ~/robot-project/certs
 ```
 
+**Windows (PowerShell):**
+```powershell
+mkdir C:\robot-project\certs
+cd C:\robot-project\certs
+```
+
+### 1.3 Generar CA y certificado servidor (OpenSSL)
+
+Copia y pega estos comandos (ajusta `-subj` si quieres nombres distintos). El Common Name (CN) del servidor puede ser la IP local si usas IP directa (ej. 192.168.1.100) o localhost.
+```bash
+# 1) Crear clave de la CA
+openssl genrsa -out ca.key 2048
+
+# 2) Crear certificado auto-firmado de la CA
+openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 -out ca.crt -subj "/CN=MiCA"
+
+# 3) Crear clave del servidor (Mosquitto)
+openssl genrsa -out server.key 2048
+
+# 4) Crear CSR (Certificate Signing Request) para el servidor
+# Reemplaza CN en -subj por la IP de tu PC en la red local si vas a conectar por IP (ej: 192.168.1.100)
+openssl req -new -key server.key -out server.csr -subj "/CN=192.168.1.100"
+
+# 5) Firmar el CSR con la CA (generar server.crt)
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256
+```
+
+Al final tendrás en `certs/`:
+- `ca.crt` (certificado de la CA)
+- `server.crt` (cert del servidor)
+- `server.key` (clave privada del servidor)
+
+**Nota:** Para pruebas locales es suficiente; si quieres que el ESP32 valide el broker, usa `ca.crt` en el ESP32.
+
+### 1.4 Configurar Mosquitto con TLS
+
+Detener y reiniciar el servicio de Mosquitto:
+
+**Windows (PowerShell como Administrador):**
+```powershell
+# Detener el servicio
+NET stop mosquitto
+
+# Iniciar el servicio
+net start mosquitto
+
+# Verificar que el puerto 8883 esté escuchando
+netstat -an | findstr 8883
+
+# Si no aparece, ejecutar Mosquitto manualmente con configuración
+cd "C:\Program Files\mosquitto"
+mosquitto -c C:/robot-project/mosquitto.conf -v
+```
+
+**Linux/macOS:**
+```bash
+# Detener el servicio
+sudo systemctl stop mosquitto
+
+# Iniciar el servicio
+sudo systemctl start mosquitto
+
+# Verificar estado
+sudo systemctl status mosquitto
+
+# Verificar puerto
+netstat -an | grep 8883
+```
+
 ---
 
-## 3. Instalación
+## 2. Instalación del proyecto
 
-### 3.1 Clonar el repositorio
+### 2.1 Clonar el repositorio
 ```bash
 git clone <URL-del-repositorio>
 cd api-mqtt
 ```
 
-### 3.2 Instalar dependencias
+### 2.2 Instalar dependencias
 ```bash
 npm install
 ```
 
 ---
 
-## 4. Ejecutar el servidor
+## 3. Ejecutar el servidor
 
-### 4.1 Verificar que Mosquitto esté ejecutándose
+### 3.1 Verificar que Mosquitto esté ejecutándose
 
 **Windows:**
 ```bash
@@ -72,9 +138,10 @@ mosquitto -v
 Si está funcionando debería mostrar algo como:
 ```
 Opening ipv4 listen socket on port 1883
+Opening ipv4 listen socket on port 8883
 ```
 
-### 4.2 Iniciar la API
+### 3.2 Iniciar la API
 ```bash
 node index.js
 ```
@@ -87,7 +154,7 @@ API corriendo en http://localhost:3000
 
 ---
 
-## 5. Frontend
+## 4. Frontend
 
 Abrir el archivo:
 ```
@@ -98,9 +165,9 @@ Se puede abrir con doble clic o desde un servidor local. El frontend usa JavaScr
 
 ---
 
-## 6. Endpoints disponibles (API)
+## 5. Endpoints disponibles (API)
 
-### 6.1 Mover el carro
+### 5.1 Mover el carro
 
 - **Método:** `POST`
 - **URL:** `http://localhost:3000/mover`
@@ -113,7 +180,7 @@ Se puede abrir con doble clic o desde un servidor local. El frontend usa JavaScr
 - **Publica en el tópico MQTT:** `carro/comandos`
 - **Valores válidos:** `"forward"`, `"left"`, `"right"`, `"backward"`, `"stop"`
 
-### 6.2 Cambiar velocidad
+### 5.2 Cambiar velocidad
 
 - **Método:** `POST`
 - **URL:** `http://localhost:3000/velocidad`
@@ -128,7 +195,7 @@ Se puede abrir con doble clic o desde un servidor local. El frontend usa JavaScr
 
 ---
 
-## 7. Tópicos MQTT usados
+## 6. Tópicos MQTT usados
 
 | Acción       | Tópico           | Payload                                          |
 |--------------|------------------|--------------------------------------------------|
@@ -139,9 +206,9 @@ Se puede abrir con doble clic o desde un servidor local. El frontend usa JavaScr
 
 ---
 
-## 8. Sensores implementados
+## 7. Sensores implementados
 
-### 8.1 Sensor Giroscópico
+### 7.1 Sensor Giroscópico
 
 El sensor giroscópico (MPU6050 o similar) permite:
 - Detectar la orientación del carro
@@ -159,7 +226,7 @@ El sensor giroscópico (MPU6050 o similar) permite:
 }
 ```
 
-### 8.2 Sensor de Proximidad
+### 7.2 Sensor de Proximidad
 
 El sensor de proximidad (HC-SR04 o similar) permite:
 - Detección de obstáculos
@@ -177,7 +244,7 @@ El sensor de proximidad (HC-SR04 o similar) permite:
 
 ---
 
-## 9. Código para ESP32
+## 8. Código para ESP32
 
 La ESP32 debe:
 - Conectarse al WiFi
@@ -195,11 +262,11 @@ El código de ejemplo se encuentra en el archivo `esp32_mqtt_client.ino`.
 
 ---
 
-## 10. Cómo funciona el sistema de comandos
+## 9. Cómo funciona el sistema de comandos
 
 La interfaz web envía comandos como letras (F, B, L, R, S) y en el código de la ESP32 hay una función que interpreta cada letra y llama a la acción correspondiente.
 
-### 10.1 La interfaz web envía la letra
+### 9.1 La interfaz web envía la letra
 
 En `control.html` tienes:
 ```javascript
@@ -213,7 +280,7 @@ document.getElementById("stop").onclick = () => send("S");
 - `send("F")` envía la letra "F" al servidor Node.js vía Socket.IO
 - "F" significa adelante, "B" significa atrás, "L" izquierda, "R" derecha y "S" detener
 
-### 10.2 Node.js recibe la letra y la publica por MQTT
+### 9.2 Node.js recibe la letra y la publica por MQTT
 
 En `server.js`:
 ```javascript
@@ -233,7 +300,7 @@ io.on('connection', (socket) => {
   Comando recibido: F
 ```
 
-### 10.3 ESP32 recibe la letra desde MQTT
+### 9.3 ESP32 recibe la letra desde MQTT
 
 En tu ESP32:
 ```cpp
@@ -265,7 +332,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
 ---
 
-## 11. Pruebas sin ESP32
+## 10. Pruebas sin ESP32
 
 Se puede validar la funcionalidad de la mensajería MQTT con las herramientas de Mosquitto.
 
@@ -287,36 +354,22 @@ mosquitto_pub -t carro/gyro -m '{"x": 0.1, "y": 0.2, "z": 9.8}'
 
 ---
 
-## 12. Notas importantes
-
-- La ESP32 no debe usar `"localhost"`; necesita la IP del PC en la misma red
-- Para obtener la IP (Host):
-
-| Sistema Operativo | Comando         | Campo a buscar  |
-|-------------------|-----------------|-----------------|
-| Windows           | `ipconfig`      | "IPv4 Address"  |
-| Linux/macOS       | `ip a` o `ifconfig` | "inet"      |
-
-- Si el frontend funciona y la API recibe las peticiones, pero no aparece nada en la ESP32, significa que la ESP32 aún no se ha conectado al broker (revisar configuración de IP y credenciales WiFi)
-- Los sensores deben ser inicializados correctamente en el código de la ESP32
-- Se recomienda calibrar el giroscopio al inicio
-
----
-
-## 13. Pasos que debe seguir cualquier colaborador
+## 11. Pasos que debe seguir cualquier colaborador
 
 1. Instalar Node.js y Mosquitto
-2. Clonar el repositorio
-3. Ejecutar `npm install`
-4. Ejecutar `node index.js`
-5. Abrir `public/index.html`
-6. Conectar la ESP32 con el código MQTT y la IP correcta
-7. Conectar sensores giroscópico y de proximidad según el esquema de pines
-8. Verificar lecturas de sensores en los tópicos MQTT correspondientes
+2. Generar certificados TLS según sección 1.2 y 1.3
+3. Configurar Mosquitto con TLS (sección 1.4)
+4. Clonar el repositorio
+5. Ejecutar `npm install`
+6. Ejecutar `node index.js`
+7. Abrir `public/index.html`
+8. Conectar la ESP32 con el código MQTT y la IP correcta
+9. Conectar sensores giroscópico y de proximidad según el esquema de pines
+10. Verificar lecturas de sensores en los tópicos MQTT correspondientes
 
 ---
 
-## 14. Esquema de conexión de sensores
+## 12. Esquema de conexión de sensores
 
 ### Sensor Giroscópico (MPU6050)
 
@@ -338,12 +391,13 @@ mosquitto_pub -t carro/gyro -m '{"x": 0.1, "y": 0.2, "z": 9.8}'
 
 ---
 
-## 15. Troubleshooting
+## 13. Troubleshooting
 
 ### Problema: ESP32 no se conecta al broker
 - Verificar que la IP del broker sea correcta
 - Comprobar que ambos dispositivos estén en la misma red
 - Revisar credenciales WiFi
+- Verificar que el puerto 8883 (TLS) o 1883 esté accesible
 
 ### Problema: Sensores no envían datos
 - Verificar conexiones físicas
@@ -354,6 +408,12 @@ mosquitto_pub -t carro/gyro -m '{"x": 0.1, "y": 0.2, "z": 9.8}'
 - Verificar que Node.js esté ejecutándose
 - Comprobar que el puerto 3000 no esté ocupado
 - Revisar logs del servidor
+
+### Problema: Mosquitto no inicia con TLS
+- Verificar que los certificados existan en la ruta especificada
+- Revisar permisos de lectura de los archivos de certificados
+- Comprobar la configuración en `mosquitto.conf`
+- Ejecutar `mosquitto -c ruta/mosquitto.conf -v` para ver errores detallados
 
 ---
 
