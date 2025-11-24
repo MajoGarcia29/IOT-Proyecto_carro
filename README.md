@@ -4,7 +4,7 @@ Este proyecto permite controlar un carro robótico usando una API en Node.js que
 
 ## Características
 
-- API en Node.js usando Express
+- API en Node.js 
 - Cliente MQTT
 - Frontend simple en HTML/JS
 - Control de motores
