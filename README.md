@@ -417,10 +417,9 @@ mosquitto_pub -t carro/gyro -m '{"x": 0.1, "y": 0.2, "z": 9.8}'
 
 ---
 
-## Licencia
 
-Este proyecto está bajo licencia MIT.
+## Miembros del Proyecto
+- María José García
+- Axel Daniel Bedoya
+- Sara Nicole Zuluaga
 
-## Contribuciones
-
-Las contribuciones son bienvenidas. Por favor, abre un issue o pull request para sugerencias o mejoras.
