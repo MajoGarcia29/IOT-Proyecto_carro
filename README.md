@@ -16,7 +16,20 @@ Este proyecto permite controlar un carro robótico usando una API en Node.js que
 
 ## 1. Requisitos
 
-### 1.1 Software necesario
+### 1.1 Software necesario, memoria, librerias
+## Memoria
+-  Sketch uses 1035779 bytes (79%) of program storage space. Maximum is 1310720 bytes.
+Global variables use 47024 bytes (14%) of dynamic memory, leaving 280656 bytes for local variables. Maximum is 327680 bytes.
+esptool v5.1.0
+
+## Librerias utilizadas
+- #include <WiFi.h>
+- #include <WiFiClientSecure.h>
+- #include <PubSubClient.h>
+- #include <NewPing.h>
+- #include <Wire.h>
+- #include <MPU6050_light.h>
+
 
 - **Node.js** (v16 o superior) - [https://nodejs.org](https://nodejs.org)
 - **Mosquitto MQTT Broker** - [https://mosquitto.org/download](https://mosquitto.org/download)
