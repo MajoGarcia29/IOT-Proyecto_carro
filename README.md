@@ -8,8 +8,8 @@ Este proyecto permite controlar un carro robótico usando una API en Node.js que
 - Cliente MQTT
 - Frontend simple en HTML/JS
 - Control de motores
-- **Sensor giroscópico** para estabilización y orientación
-- **Sensor de proximidad** para detección de obstáculos
+- Sensor giroscópico para estabilización y orientación
+- Sensor de proximidad para detección de obstáculos
 - Instrucciones completas para instalación, ejecución y pruebas
 
 ---
@@ -106,9 +106,9 @@ Se puede abrir con doble clic o desde un servidor local. El frontend usa JavaScr
 - **URL:** `http://localhost:3000/mover`
 - **Body (JSON):**
 ```json
-  {
-    "cmd": "forward"
-  }
+{
+  "cmd": "forward"
+}
 ```
 - **Publica en el tópico MQTT:** `carro/comandos`
 - **Valores válidos:** `"forward"`, `"left"`, `"right"`, `"backward"`, `"stop"`
@@ -119,9 +119,9 @@ Se puede abrir con doble clic o desde un servidor local. El frontend usa JavaScr
 - **URL:** `http://localhost:3000/velocidad`
 - **Body (JSON):**
 ```json
-  {
-    "valor": 150
-  }
+{
+  "valor": 150
+}
 ```
 - **Publica en:** `carro/velocidad`
 - **Valor numérico en el rango:** `0–255`
@@ -195,7 +195,77 @@ El código de ejemplo se encuentra en el archivo `esp32_mqtt_client.ino`.
 
 ---
 
-## 10. Pruebas sin ESP32
+## 10. Cómo funciona el sistema de comandos
+
+La interfaz web envía comandos como letras (F, B, L, R, S) y en el código de la ESP32 hay una función que interpreta cada letra y llama a la acción correspondiente.
+
+### 10.1 La interfaz web envía la letra
+
+En `control.html` tienes:
+```javascript
+document.getElementById("up").onclick = () => send("F");
+document.getElementById("down").onclick = () => send("B");
+document.getElementById("left").onclick = () => send("L");
+document.getElementById("right").onclick = () => send("R");
+document.getElementById("stop").onclick = () => send("S");
+```
+
+- `send("F")` envía la letra "F" al servidor Node.js vía Socket.IO
+- "F" significa adelante, "B" significa atrás, "L" izquierda, "R" derecha y "S" detener
+
+### 10.2 Node.js recibe la letra y la publica por MQTT
+
+En `server.js`:
+```javascript
+io.on('connection', (socket) => {
+    console.log("UI conectada");
+    socket.on("cmd", (cmd) => {
+        console.log("Comando recibido:", cmd);
+        client.publish(TOPIC_CMD, cmd);
+    });
+});
+```
+
+- `cmd` es la letra recibida de la interfaz (por ejemplo "F")
+- Se publica en el topic MQTT `robot/comando`
+- Ahí es donde aparece en la consola del servidor:
+```
+  Comando recibido: F
+```
+
+### 10.3 ESP32 recibe la letra desde MQTT
+
+En tu ESP32:
+```cpp
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  String comando = "";
+  for (int i=0; i<length; i++) comando += (char)payload[i];
+  Serial.print("Comando recibido: "); Serial.println(comando);
+  if (comando == "F") adelante();
+  else if (comando == "B") atras();
+  else if (comando == "L") izquierda();
+  else if (comando == "R") derecha();
+  else if (comando == "S") detener();
+}
+```
+
+- `payload` contiene la letra que publicó Node.js en MQTT
+- Se convierte a `String comando`
+- Luego, hay una serie de `if` que mapea cada letra a una función de movimiento:
+
+| Letra | Función llamada |
+|-------|-----------------|
+| F     | adelante()      |
+| B     | atras()         |
+| L     | izquierda()     |
+| R     | derecha()       |
+| S     | detener()       |
+
+- `Serial.println("Comando recibido: " + comando);` muestra en el monitor serie la letra que llegó
+
+---
+
+## 11. Pruebas sin ESP32
 
 Se puede validar la funcionalidad de la mensajería MQTT con las herramientas de Mosquitto.
 
@@ -217,9 +287,9 @@ mosquitto_pub -t carro/gyro -m '{"x": 0.1, "y": 0.2, "z": 9.8}'
 
 ---
 
-## 11. Notas importantes
+## 12. Notas importantes
 
-- La ESP32 **no debe usar** `"localhost"`; necesita la **IP del PC** en la misma red
+- La ESP32 no debe usar `"localhost"`; necesita la IP del PC en la misma red
 - Para obtener la IP (Host):
 
 | Sistema Operativo | Comando         | Campo a buscar  |
@@ -233,7 +303,7 @@ mosquitto_pub -t carro/gyro -m '{"x": 0.1, "y": 0.2, "z": 9.8}'
 
 ---
 
-## 12. Pasos que debe seguir cualquier colaborador
+## 13. Pasos que debe seguir cualquier colaborador
 
 1. Instalar Node.js y Mosquitto
 2. Clonar el repositorio
@@ -246,7 +316,7 @@ mosquitto_pub -t carro/gyro -m '{"x": 0.1, "y": 0.2, "z": 9.8}'
 
 ---
 
-## 13. Esquema de conexión de sensores
+## 14. Esquema de conexión de sensores
 
 ### Sensor Giroscópico (MPU6050)
 
@@ -268,7 +338,7 @@ mosquitto_pub -t carro/gyro -m '{"x": 0.1, "y": 0.2, "z": 9.8}'
 
 ---
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 ### Problema: ESP32 no se conecta al broker
 - Verificar que la IP del broker sea correcta
